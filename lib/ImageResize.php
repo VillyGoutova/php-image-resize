@@ -491,7 +491,7 @@ class ImageResize
 
         
         
-        return $this->resize($width, $height, $allow_enlarge, $fitexactly);
+        return $this->resize($width, $height, $allow_enlarge);
     }
 
     /**
@@ -518,7 +518,7 @@ class ImageResize
      * @param boolean $allow_enlarge
      * @return \static
      */
-    public function resize($width, $height, $allow_enlarge = false, $fillcolor = false)
+    public function resize($width, $height, $allow_enlarge = false)
     {
         if (!$allow_enlarge) {
             // if the user hasn't explicitly allowed enlarging,
