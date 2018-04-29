@@ -46,6 +46,9 @@ class ImageResize
 
     protected $source_info;
 
+    protected $fitexactly=false;
+    protected $e_dest_w;
+    protected $e_dest_h;
 
     protected $filters = [];
 
@@ -211,7 +214,17 @@ class ImageResize
     {
         $image_type = $image_type ?: $this->source_type;
         $quality = is_numeric($quality) ? (int) abs($quality) : null;
-
+        $main_dest = false;
+        
+        if($this->fitexactly) {
+            $main_dest = imagecreatetruecolor($this->getDestExactWidth(), $this->getDestExactHeight());
+            imagesavealpha($main_dest, true);
+            $background = imagecolorallocatealpha($main_dest, 255, 255, 255, 127);
+            imagecolortransparent($main_dest, $background);
+            imagefill($main_dest, 0, 0, $background);
+            
+        }
+        
         switch ($image_type) {
         case IMAGETYPE_GIF:
             $dest_image = imagecreatetruecolor($this->getDestWidth(), $this->getDestHeight());
@@ -272,6 +285,12 @@ class ImageResize
 
 
         $this->applyFilter($dest_image);
+        
+        if($this->fitexactly){
+            imagecopy( $main_dest, $dest_image, 0, 0, 0, 0, $this->getDestWidth(), $this->getDestHeight() );
+            $dest_image = $main_dest;
+        }
+        
 
         switch ($image_type) {
         case IMAGETYPE_GIF:
@@ -447,9 +466,10 @@ class ImageResize
      * @param integer $max_width
      * @param integer $max_height
      * @param boolean $allow_enlarge
+     * @param boolean $fitexactly 
      * @return \static
      */
-    public function resizeToBestFit($max_width, $max_height, $allow_enlarge = false)
+    public function resizeToBestFit($max_width, $max_height, $allow_enlarge = false, $fitexactly = false )
     {
         if ($this->getSourceWidth() <= $max_width && $this->getSourceHeight() <= $max_height && $allow_enlarge === false) {
             return $this;
@@ -463,8 +483,15 @@ class ImageResize
             $height = $max_height;
             $width = $height / $ratio;
         }
+        if($fitexactly) {
+            $this->fitexactly = $fitexactly;
+            $this->e_dest_w = $max_width;
+            $this->e_dest_h = $max_height;
+        }
 
-        return $this->resize($width, $height, $allow_enlarge);
+        
+        
+        return $this->resize($width, $height, $allow_enlarge, $fitexactly);
     }
 
     /**
@@ -491,7 +518,7 @@ class ImageResize
      * @param boolean $allow_enlarge
      * @return \static
      */
-    public function resize($width, $height, $allow_enlarge = false)
+    public function resize($width, $height, $allow_enlarge = false, $fillcolor = false)
     {
         if (!$allow_enlarge) {
             // if the user hasn't explicitly allowed enlarging,
@@ -638,6 +665,26 @@ class ImageResize
     public function getDestHeight()
     {
         return $this->dest_h;
+    }
+    
+    
+    /**
+     * Gets exact width of the destination image
+     *
+     * @return integer
+     */
+    public function getDestExactWidth()
+    {
+        return $this->e_dest_w;
+    }
+
+    /**
+     * Gets exact height of the destination image
+     * @return integer
+     */
+    public function getDestExactHeight()
+    {
+        return $this->e_dest_h;
     }
 
     /**
